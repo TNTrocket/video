@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>video</title>
+  </head>
+  <body>
+    <div class="videoWarp">
+      <video width="350" class="videoSource">
+        <source src="./test.mp4" type="video/mp4" />
+      </video>
+      <div class="playIcon"></div>
+      <div class="videoBar">
+        <div class="playBtns"></div>
+        <div class="timeLine">
+          <div class="hasRecordLine"></div>
+          <div class="hasRecordBtn"></div>
+        </div>
+        <div class="timeCount"></div>
+        <div class="sounds">
+          <div class="soundsLine">
+            <div class="soundsContent">
+              <div class="soundText">100</div>
+              <div class="soundControl">
+                <div class="line"></div>
+                <div class="lineBtn"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="timeRate">
+          倍速<span class="rateTxt"></span>
+          <div class="timeModal">
+            <ul>
+              <li data-timerate="1">1x</li>
+              <li data-timerate="1.5">1.5x</li>
+              <li data-timerate="2">2x</li>
+            </ul>
+          </div>
+        </div>
+        <div class="fullscreen">全屏</div>
+      </div>
+    </div>
+
+    <style type="text/css">
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      .videoWarp {
+        background: #000;
+        position: relative;
+        width: 800px;
+      }
+      .videoSource {
+        width: 800px;
+        height: 500px;
+        display: block;
+      }
+      .videoBar {
+        height: 40px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+      }
+      .playBtns {
+        background: url('./img/start.png');
+        width: 57px;
+        height: 40px;
+      }
+      .timeLine {
+        width: 60%;
+        height: 2px;
+        background: #ebebeb;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        position: relative;
+      }
+      .timeLine .hasRecordLine {
+        width: 0;
+        height: 2px;
+        background: blue;
+        position: absolute;
+        z-index: 88;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: width 0.001s linear;
+      }
+      .timeLine .hasRecordBtn {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ebebeb;
+        cursor: pointer;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: left 0.001s linear;
+        z-index: 99;
+      }
+      .timeRate {
+        color: #fff;
+        font-size: 16px;
+        position: relative;
+        cursor: pointer;
+      }
+      .fullscreen {
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .fullscreenStatus {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+      .fullscreenVideoBar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 111;
+        width: 100%;
+      }
+      .playIcon {
+        background: url('./img/play.png');
+        width: 90px;
+        height: 90px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .videoPause {
+        background: url('./img/pause.png');
+        width: 20px;
+        height: 20px;
+        background-size: 100% 100%;
+      }
+      .timeCount {
+        color: #fff;
+        font-size: 16px;
+        margin-left: 10px;
+      }
+      .timeModal {
+        position: absolute;
+        font-size: 14px;
+        left: 0;
+        top: -70px;
+        width: 30px;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        cursor: pointer;
+      }
+      .timeModal ul {
+        list-style: none;
+        text-align: center;
+      }
+      .timeModal ul li {
+        padding: 2px 5px;
+      }
+      .rateTxt {
+        font-size: 12px;
+      }
+      .sounds {
+        background: url('./img/sound_on.png') no-repeat;
+        width: 15px;
+        height: 11px;
+        position: relative;
+      }
+      .sounds .soundsLine {
+        color: #fff;
+        display: none;
+        position: absolute;
+        z-index: 9;
+        width: 100%;
+        left: 0;
+        top: -68px;
+        font-size: 12px;
+        text-align: center;
+      }
+      .soundsContent {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .sounds .soundsLine .line {
+        width: 2px;
+        background: #ebebeb;
+        height: 0%;
+      }
+      .soundControl {
+        position: relative;
+        height: 50px;
+        width: 2px;
+        background: blue;
+      }
+      .lineBtn {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 0%;
+        background: #fff;
+      }
+    </style>
+    <script>
+      class videoBar {
+        constructor() {
+          this.init();
+        }
+        addClass(dom, className) {
+          dom.className = `${dom.className} ${className}`;
+        }
+        removeClass(dom, className) {
+          dom.className = dom.className
+            .replace(className, '')
+            .replace(/\s$/g, '');
+        }
+        dragBar() {
+          this.progressBtn = document.querySelector('.hasRecordBtn');
+          this.progress = document.querySelector('.hasRecordLine');
+          this.progressLeft = this.progress.getBoundingClientRect().left;
+          this.timeLine = document.querySelector('.timeLine');
+          this.progressWidth = this.timeLine.clientWidth - 20;
+
+          this.videoWarp = document.querySelector('.videoWarp');
+          this.drag = false;
+
+          this.progressBtn.onmousedown = () => {
+            this.drag = true;
+          };
+          this.videoWarp.onmousemove = e => {
+            e.preventDefault();
+            if (this.drag) {
+              let left = e.clientX - this.progressLeft;
+              if (left >= this.progressWidth || left <= 0) {
+                return;
+              }
+              this.dragBarTime(left);
+
+              this.progress.style = `width:${(left / this.progressWidth) *
+                100}%`;
+              this.progressBtn.style = `left:${(left / this.progressWidth) *
+                100}%`;
+              this.updateTimeCount();
+            }
+          };
+          this.videoWarp.onmouseup = e => {
+            this.drag = false;
+          };
+          this.videoWarp.onmouseleave = e => {
+            this.drag = false;
+          };
+        }
+        updateTimeCount() {
+          this.timeCount.innerText = `${this.formateToMin(
+            this.video.currentTime
+          )}/${this.formateToMin(this.video.duration)}`;
+        }
+        formateToMin(time) {
+          let hour = Math.floor(time / 60 / 60);
+          let min = Math.floor(time / 60);
+          let second = Math.floor(time % 60);
+          let res = `${hour >= 1 ? hour + ':' : ''}${
+            min >= 10 ? min : '0' + min
+          }:${second >= 10 ? second : '0' + second}`;
+          return res;
+        }
+        dragBarTime(dragDistance) {
+          console.log(dragDistance);
+          let distanceRate = dragDistance / this.progressWidth;
+          let currentTime = this.video.duration * distanceRate;
+          this.video.currentTime = currentTime;
+        }
+        initVideo() {
+          this.video = document.querySelector('.videoSource');
+          this.playBtns = document.querySelector('.playBtns');
+          this.playRate = document.querySelector('.timeRate');
+          this.fullscreen = document.querySelector('.fullscreen');
+          this.videoBar = document.querySelector('.videoBar');
+          this.playIcon = document.querySelector('.playIcon');
+          this.timeCount = document.querySelector('.timeCount');
+          this.timeRateModal = document.querySelector('.timeModal');
+          this.timeRateModalValue = document.querySelector('.timeModal ul');
+          this.rateTxt = document.querySelector('.rateTxt');
+          this.sounds = document.querySelector('.sounds');
+
+          this.video.onloadedmetadata = () => {
+            this.videoDuration = this.video.duration;
+            this.updateTimeCount();
+            console.log('play', this.video.playbackRate);
+          };
+          this.playRate.onmouseover = e => {
+            this.timeRateModal.style = 'display:block';
+          };
+          this.playRate.onmouseleave = e => {
+            this.timeRateModal.style = '';
+          };
+          this.timeRateModalValue.onclick = e => {
+            let data = e.target.dataset;
+            this.video.playbackRate = data.timerate;
+            this.rateTxt.innerText = data.timerate + 'x';
+            this.timeRateModal.style = '';
+          };
+          this.video.ontimeupdate = e => {
+            if (!this.drag) {
+              let timeRate = this.video.currentTime / this.videoDuration;
+
+              this.progress.style = `width:${timeRate * 100}%`;
+              this.progressBtn.style = `left:${timeRate * 100}%`;
+              this.updateTimeCount();
+              console.log('timeStamp', this.video.currentTime);
+            }
+          };
+          this.playBtns.onclick = e => {
+            this.video.click();
+          };
+          this.playIcon.addEventListener(
+            'click',
+            e => {
+              this.video.click();
+            },
+            false
+          );
+          this.video.addEventListener(
+            'click',
+            e => {
+              e.stopPropagation();
+              if (this.video.paused) {
+                this.playIcon.style = 'display:none';
+                this.addClass(this.playBtns, 'videoPause');
+                this.video.play();
+              } else {
+                this.removeClass(this.playBtns, 'videoPause');
+                this.playIcon.style = 'display:block';
+                this.video.pause();
+              }
+            },
+            false
+          );
+          this.video.addEventListener('ended', () => {
+            this.removeClass(this.playBtns, 'videoPause');
+            this.playIcon.style = 'display:block';
+          });
+          this.soundsBar();
+        }
+        goFullScreen() {
+          function FShandler() {
+            if (document.fullscreenElement) {
+              this.fullscreen.innerText = '退出全屏';
+              console.log('进入全屏');
+            } else {
+              this.resetVideo();
+              this.fullscreen.innerText = '全屏';
+              console.log('退出全屏');
+            }
+            setTimeout(() => {
+              this.progressLeft = this.progress.getBoundingClientRect().left;
+              this.progressWidth = this.timeLine.clientWidth - 20;
+              console.log('timeLine', this.timeLine);
+              console.log('fullwidth', this.progressWidth);
+            }, 0);
+          }
+          document.addEventListener(
+            'fullscreenchange',
+            FShandler.bind(this),
+            false
+          );
+          document.addEventListener(
+            'webkitfullscreenchange',
+            FShandler.bind(this),
+            false
+          );
+          document.addEventListener(
+            'mozfullscreenchange',
+            FShandler.bind(this),
+            false
+          );
+          document.addEventListener(
+            'MSFullscreenChange',
+            FShandler.bind(this),
+            false
+          );
+          this.fullscreen.onclick = e => {
+            let docElm = document.documentElement;
+            if (this.isfull) {
+              this.isfull = false;
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+              } else if (document.webkitCancelFullScreen) {
+                document.webkitCancelFullScreen();
+              } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+              }
+            } else {
+              this.isfull = true;
+              //W3C
+              if (docElm.requestFullscreen) {
+                docElm.requestFullscreen();
+              }
+              //FireFox
+              else if (docElm.mozRequestFullScreen) {
+                docElm.mozRequestFullScreen();
+              }
+              //Chrome等
+              else if (docElm.webkitRequestFullScreen) {
+                docElm.webkitRequestFullScreen();
+              }
+              this.videoWarp.className = `${
+                this.videoWarp.className
+              } fullscreenStatus`;
+              this.video.style.cssText = 'width:100%;height:100%';
+              this.videoBar.className = `${
+                this.videoBar.className
+              } fullscreenVideoBar`;
+            }
+          };
+        }
+        resetVideo() {
+          this.videoWarp.className = this.videoWarp.className.replace(
+            'fullscreenStatus',
+            ''
+          );
+          this.video.style.cssText = '';
+          this.videoBar.className = this.videoBar.className.replace(
+            'fullscreenVideoBar',
+            ''
+          );
+        }
+        soundsBar() {
+          this.soundsBarLine = document.querySelector('.soundsLine');
+          this.lineBtn = document.querySelector('.soundsLine .lineBtn');
+          this.soundControl = document.querySelector('.soundControl');
+          this.lineSound = document.querySelector('.sounds .soundsLine .line');
+          this.soundText = document.querySelector('.soundText');
+          this.soundsDom = document.querySelector('.sounds');
+
+          this.lineBtn.addEventListener(
+            'mousedown',
+            e => {
+              this.soundsDrag = true;
+            },
+            false
+          );
+          this.soundsBarLine.addEventListener(
+            'mouseup',
+            e => {
+              this.soundsDrag = false;
+            },
+            false
+          );
+          this.soundsBarLine.addEventListener(
+            'mouseleave',
+            e => {
+              this.soundsDrag = false;
+            },
+            false
+          );
+          this.soundsDom.addEventListener(
+            'mouseleave',
+            e => {
+              this.soundsBarLine.style = '';
+            },
+            false
+          );
+          this.soundsBarLine.addEventListener(
+            'mousemove',
+            e => {
+              if (this.soundsDrag) {
+                let clientY = e.clientY;
+                let offsetHeight = clientY - this.soundsTop;
+                console.log('off', offsetHeight, this.soundsTop);
+
+                let count = (offsetHeight / this.soundsHeight) * 100;
+
+                if (count > 100) {
+                  count = 100;
+                } else if (count < 0) {
+                  count = 0;
+                }
+                let sound = 100 - Math.ceil(count);
+                this.soundText.innerText = sound;
+                this.video.volume = sound / 100;
+                this.lineSound.style = `height:${count}%`;
+                this.lineBtn.style = `top:${count}%`;
+              }
+            },
+            false
+          );
+          this.sounds.onmouseover = e => {
+            this.soundsBarLine.style = 'display:block';
+            this.soundsHeight = this.soundControl.clientHeight - 10;
+            this.soundsTop = this.soundControl.getBoundingClientRect().top;
+          };
+        }
+        init() {
+          this.initVideo();
+          this.dragBar();
+          this.goFullScreen();
+        }
+      }
+      new videoBar();
+    </script>
+  </body>
+</html>
